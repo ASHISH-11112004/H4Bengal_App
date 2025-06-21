@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Shield } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 export function Footer() {
   return (
@@ -9,15 +10,14 @@ export function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-                {/* <Image
-                  src="/assets/TenantTrust.png"
-                  
-                  width={24}
-                  height={24}
-                  className="rounded object-contain"
-                /> */}
-                <Shield className="h-5 w-5 text-white" />
+              <div className="flex items-center justify-center">
+                <Image
+                  src="/assets/TenuntTrust (1).png"
+                  alt="TenantTrust Logo"
+                  width={40}
+                  height={40}
+                  className="rounded object-cover"
+                />
               </div>
               <span className="text-xl font-bold">TenantTrust</span>
             </div>

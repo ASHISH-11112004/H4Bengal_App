@@ -8,10 +8,13 @@ import { ChatWidget } from "@/components/chat-widget"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "TenantTrust - Secure Rental Agreements",
+  title: "TenantTrust",
   description:
     "AI-powered rental agreement platform with fraud prevention, verified users, and smart contract features.",
-    generator: 'ashish'
+  icons: {
+    icon: "/assets/TenuntTrust (1).png",
+  },
+  generator: 'ashish'
 }
 
 export default function RootLayout({ children }) {

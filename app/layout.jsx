@@ -10,7 +10,7 @@ export const metadata = {
   title: "TenantTrust - Secure Rental Agreements",
   description:
     "AI-powered rental agreement platform with fraud prevention, verified users, and smart contract features.",
-    generator: 'v0.dev'
+    generator: 'ashish'
 }
 
 export default function RootLayout({ children }) {

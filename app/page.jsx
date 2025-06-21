@@ -92,7 +92,7 @@ export default function HomePage() {
           >
             <Badge variant="secondary" className="mb-6 px-4 py-2 text-sm font-medium">
               <Sparkles className="w-4 h-4 mr-2" />
-              AI-Powered Rental Platform
+              AI-Powered Contract Platform
             </Badge>
 
             <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
@@ -107,8 +107,8 @@ export default function HomePage() {
             </p>
 
             <p className="text-lg text-gray-500 mb-12 max-w-3xl mx-auto">
-              Your all-in-one secure and AI-powered rental agreement platform. From fraud prevention and smart contract
-              clauses to verified identity login and guardian co-signing—TenantTrust makes renting smarter and safer.
+              Your all-in-one secure and AI-powered rental agreement platform. From fraud prevention and smart Agreement
+              clauses to verified identity login and TenantTrust makes renting smarter and safer.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

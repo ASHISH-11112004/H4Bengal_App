@@ -112,13 +112,6 @@ export default function FraudDetectionPage() {
     overallScore: 85,
   })
 
-  const [fraudStats] = useState([
-    { label: "Documents Scanned", value: "1,247", change: "+12%", icon: FileText },
-    { label: "Fraud Cases Detected", value: "23", change: "-8%", icon: AlertTriangle },
-    { label: "Success Rate", value: "98.2%", change: "+0.3%", icon: CheckCircle },
-    { label: "Processing Time", value: "2.3s", change: "-15%", icon: Clock },
-  ])
-
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
@@ -209,42 +202,88 @@ export default function FraudDetectionPage() {
       setScanProgress((prev) => (prev < 90 ? prev + 10 : 90))
     }, 200)
 
-    const formData = new FormData()
-    formData.append("file", file)
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = async () => {
+      const base64String = reader.result?.toString().split(",")[1]
 
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        body: formData,
-      })
-
-      clearInterval(progressInterval)
-      setScanProgress(100)
-
-      if (!response.ok) {
-        throw new Error(`Webhook failed with status ${response.status}`)
+      if (!base64String) {
+        setScanResults([
+          {
+            id: "error-1",
+            type: "error",
+            icon: XCircle,
+            message: "Failed to read file",
+            detail: "Could not convert file to base64.",
+            severity: "high",
+          },
+        ])
+        clearInterval(progressInterval)
+        setIsScanning(false)
+        setScanComplete(true)
+        return
       }
 
-      const results = await response.json()
+      const requestBody = {
+        fileName: file.name,
+        fileContent: base64String,
+        fileType: file.type,
+      }
 
-      const newResults = results.map((result: any) => ({
-        ...result,
-        icon: iconMap[result.icon] || Info,
-      }))
-      setScanResults(newResults)
-    } catch (error: any) {
-      console.error("Error analyzing document:", error)
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        clearInterval(progressInterval)
+        setScanProgress(100)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Webhook failed with status ${response.status}: ${errorText}`)
+        }
+
+        const results = await response.json()
+
+        const newResults = results.map((result: any) => ({
+          ...result,
+          icon: iconMap[result.icon] || Info,
+        }))
+        setScanResults(newResults)
+      } catch (error: any) {
+        console.error("Error analyzing document:", error)
+        setScanResults([
+          {
+            id: "error-1",
+            type: "error",
+            icon: XCircle,
+            message: "Failed to analyze document",
+            detail: error.message,
+            severity: "high",
+          },
+        ])
+      } finally {
+        setIsScanning(false)
+        setScanComplete(true)
+      }
+    }
+    reader.onerror = (error) => {
+      console.error("Error reading file:", error)
       setScanResults([
         {
           id: "error-1",
           type: "error",
           icon: XCircle,
-          message: "Failed to analyze document",
-          detail: error.message,
+          message: "Failed to read file",
+          detail: "An error occurred while trying to read the file.",
           severity: "high",
         },
       ])
-    } finally {
+      clearInterval(progressInterval)
       setIsScanning(false)
       setScanComplete(true)
     }
@@ -277,31 +316,6 @@ export default function FraudDetectionPage() {
             </p>
           </div>
         </motion.div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {fraudStats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <stat.icon className="w-8 h-8 text-blue-600" />
-                    <Badge variant="secondary" className="text-xs">
-                      {stat.change}
-                    </Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">

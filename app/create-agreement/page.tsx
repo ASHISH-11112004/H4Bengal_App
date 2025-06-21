@@ -2,9 +2,19 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import jsPDF from "jspdf"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,6 +63,16 @@ export default function CreateAgreementPage() {
     smokingPolicy: "not-allowed",
     additionalTerms: "",
   })
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("agreementDraft")
+    if (savedDraft) {
+      setFormData(JSON.parse(savedDraft))
+    }
+  }, [])
 
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
@@ -89,10 +109,37 @@ export default function CreateAgreementPage() {
     }
   }
 
+  const handleSaveDraft = () => {
+    localStorage.setItem("agreementDraft", JSON.stringify(formData))
+    alert("Draft saved successfully!")
+  }
+
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF()
+    doc.text("Rental Agreement", 20, 10)
+    doc.text(`Landlord: ${formData.landlordName}`, 20, 20)
+    doc.text(`Tenant: ${formData.tenantName}`, 20, 30)
+    doc.text(`Property: ${formData.propertyAddress}`, 20, 40)
+    doc.text(`Rent: $${formData.rent}/month`, 20, 50)
+    doc.text(`Deposit: $${formData.deposit}`, 20, 60)
+    doc.text(`Start Date: ${formData.startDate}`, 20, 70)
+    doc.text(`Duration: ${formData.duration} months`, 20, 80)
+    doc.text("Additional Terms:", 20, 90)
+    doc.text(formData.additionalTerms, 20, 100, { maxWidth: 170 })
+    doc.save("rental-agreement.pdf")
+  }
+
+  const handleRunFraudCheck = () => {
+    localStorage.setItem("fraudCheckData", JSON.stringify(formData))
+    router.push("/fraud-detection")
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Agreement created:", formData)
-    // Handle form submission logic here
+    // TODO: Send data to backend
+    localStorage.removeItem("agreementDraft") // Clear draft after submission
+    setIsSubmissionDialogOpen(true)
   }
 
   const renderStepContent = () => {
@@ -475,7 +522,7 @@ export default function CreateAgreementPage() {
                   </Button>
 
                   <div className="flex space-x-3">
-                    <Button type="button" variant="outline">
+                    <Button type="button" variant="outline" onClick={handleSaveDraft}>
                       <Save className="w-4 h-4 mr-2" />
                       Save Draft
                     </Button>
@@ -501,32 +548,104 @@ export default function CreateAgreementPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.2 }}
               className="mt-6"
             >
               <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview & Actions</h3>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Preview Document
-                    </Button>
-                    <Button variant="outline">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download PDF
-                    </Button>
-                    <Button variant="outline">
-                      <Shield className="w-4 h-4 mr-2" />
-                      Run Fraud Check
-                    </Button>
-                  </div>
+                <CardHeader>
+                  <CardTitle>Preview & Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsPreviewOpen(true)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview Document
+                  </Button>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadPdf}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={handleRunFraudCheck}>
+                    <Shield className="w-4 h-4 mr-2" />
+                    Run Fraud Check
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
           )}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Agreement Preview</DialogTitle>
+            <DialogDescription>This is a preview of the rental agreement.</DialogDescription>
+          </DialogHeader>
+          <div className="prose prose-sm max-h-[60vh] overflow-y-auto p-4 border rounded-md">
+            <h2>Rental Agreement</h2>
+            <p>
+              <strong>Landlord:</strong> {formData.landlordName}
+            </p>
+            <p>
+              <strong>Tenant:</strong> {formData.tenantName}
+            </p>
+            <p>
+              <strong>Property:</strong> {formData.propertyAddress}
+            </p>
+            <hr />
+            <h3>Terms</h3>
+            <p>
+              <strong>Rent:</strong> ${formData.rent} per month
+            </p>
+            <p>
+              <strong>Security Deposit:</strong> ${formData.deposit}
+            </p>
+            <p>
+              <strong>Lease Duration:</strong> {formData.duration} months
+            </p>
+            <p>
+              <strong>Start Date:</strong> {formData.startDate}
+            </p>
+            <h3>Policies</h3>
+            <p>
+              <strong>Pet Policy:</strong> {formData.petPolicy}
+            </p>
+            <p>
+              <strong>Smoking Policy:</strong> {formData.smokingPolicy}
+            </p>
+            <h3>Additional Terms</h3>
+            <p>{formData.additionalTerms || "None"}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsPreviewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submission Confirmation Modal */}
+      <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Success!</DialogTitle>
+            <DialogDescription>Your rental agreement has been created.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <p>You will receive a confirmation email shortly.</p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsSubmissionDialogOpen(false)
+                // Optionally reset form or redirect
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

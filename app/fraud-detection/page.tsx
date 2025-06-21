@@ -23,7 +23,7 @@ import {
   Info,
 } from "lucide-react"
 
-const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook-test/analyze-contract"
+const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook/analyze-contract"
 
 const iconMap: { [key: string]: React.ElementType } = {
   Shield,
@@ -55,6 +55,67 @@ interface AIAnalysis {
   legalCompliance: number
   riskScore: "Low" | "Medium" | "High"
   overallScore: number
+}
+
+// Helper function to parse varied webhook responses and map to our UI's data structure.
+const parseWebhookResponse = (data: any): ScanResult[] => {
+  let issues: any[] = []
+
+  // Case 1: Data is an object that contains an array of issues.
+  if (typeof data === "object" && !Array.isArray(data) && data !== null) {
+    const possibleKeys = ["results", "issues", "analysis", "findings", "data"]
+    const key = possibleKeys.find((k) => Array.isArray(data[k]))
+    if (key) {
+      issues = data[key]
+    } else {
+      // Case 2: Data is a single result object that needs to be in an array.
+      issues = [data]
+    }
+  } else if (Array.isArray(data)) {
+    // Case 3: Data is already an array of issues.
+    issues = data
+  }
+
+  // If after all checks, there are no issues, return a success message.
+  if (!issues || issues.length === 0 || Object.keys(issues[0]).length === 0) {
+    return [
+      {
+        id: "no-issues-found",
+        type: "success",
+        icon: CheckCircle,
+        message: "Analysis complete. No major issues found.",
+        detail: "The document appears to be in good order based on the analysis.",
+        severity: "low",
+      },
+    ]
+  }
+
+  // Map the found issues to the ScanResult format our UI expects.
+  return issues.map((item: any, index: number) => {
+    const severity = (item.severity || item.risk || "low").toLowerCase()
+    let type: ScanResult["type"] = "info"
+    let icon = Info
+
+    if (severity === "high") {
+      type = "error"
+      icon = XCircle
+    } else if (severity === "medium") {
+      type = "warning"
+      icon = AlertTriangle
+    } else if (severity === "low") {
+      type = "success"
+      icon = CheckCircle
+    }
+
+    return {
+      id: item.id || `result-${Date.now()}-${index}`,
+      message: item.message || item.title || "Analysis Finding",
+      detail: item.detail || item.description || "No further details provided.",
+      severity: severity as ScanResult["severity"],
+      type: type,
+      icon: icon,
+    }
+  })
 }
 
 export default function FraudDetectionPage() {
@@ -249,10 +310,8 @@ export default function FraudDetectionPage() {
 
         const results = await response.json()
 
-        const newResults = results.map((result: any) => ({
-          ...result,
-          icon: iconMap[result.icon] || Info,
-        }))
+        // Use the robust parser to handle any response structure
+        const newResults = parseWebhookResponse(results)
         setScanResults(newResults)
       } catch (error: any) {
         console.error("Error analyzing document:", error)

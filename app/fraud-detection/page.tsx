@@ -23,7 +23,7 @@ import {
   Info,
 } from "lucide-react"
 
-const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook/analyze-contract"
+const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook-test/analyze-contract"
 
 const iconMap: { [key: string]: React.ElementType } = {
   Shield,

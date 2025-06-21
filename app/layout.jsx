@@ -3,6 +3,7 @@ import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ChatWidget } from "@/components/chat-widget"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
             <Navigation />
             <main className="flex-1">{children}</main>
             <Footer />
+            <ChatWidget />
           </div>
         </ThemeProvider>
       </body>

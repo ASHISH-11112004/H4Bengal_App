@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,24 @@ import {
   Info,
 } from "lucide-react"
 
+const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook/analyze-contract"
+
+const iconMap: { [key: string]: React.ElementType } = {
+  Shield,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  FileText,
+  Scan,
+  Brain,
+  TrendingUp,
+  Clock,
+  Eye,
+  Download,
+  RefreshCw,
+  Info,
+}
+
 interface ScanResult {
   id: string
   type: "success" | "warning" | "error" | "info"
@@ -44,8 +62,7 @@ export default function FraudDetectionPage() {
   const [scanProgress, setScanProgress] = useState(0)
   const [scanComplete, setScanComplete] = useState(false)
   const [activeTab, setActiveTab] = useState("scan")
-
-  const [scanResults] = useState<ScanResult[]>([
+  const [scanResults, setScanResults] = useState<ScanResult[]>([
     {
       id: "1",
       type: "success",
@@ -101,6 +118,9 @@ export default function FraudDetectionPage() {
     { label: "Success Rate", value: "98.2%", change: "+0.3%", icon: CheckCircle },
     { label: "Processing Time", value: "2.3s", change: "-15%", icon: Clock },
   ])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
   const runScan = async () => {
     setIsScanning(true)
@@ -160,6 +180,86 @@ export default function FraudDetectionPage() {
       default:
         return "text-gray-600 bg-gray-100"
     }
+  }
+
+  // Handle file upload
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "" // reset so same file can be selected again
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadedFile(e.target.files[0])
+      // You can add further processing here (e.g., send to backend, parse, etc.)
+      // alert(`Uploaded: ${e.target.files[0].name}`)
+      analyzeDocument(e.target.files[0])
+    }
+  }
+
+  const analyzeDocument = async (file: File) => {
+    setIsScanning(true)
+    setScanProgress(0)
+    setScanComplete(false)
+    setScanResults([])
+
+    const progressInterval = setInterval(() => {
+      setScanProgress((prev) => (prev < 90 ? prev + 10 : 90))
+    }, 200)
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        body: formData,
+      })
+
+      clearInterval(progressInterval)
+      setScanProgress(100)
+
+      if (!response.ok) {
+        throw new Error(`Webhook failed with status ${response.status}`)
+      }
+
+      const results = await response.json()
+
+      const newResults = results.map((result: any) => ({
+        ...result,
+        icon: iconMap[result.icon] || Info,
+      }))
+      setScanResults(newResults)
+    } catch (error: any) {
+      console.error("Error analyzing document:", error)
+      setScanResults([
+        {
+          id: "error-1",
+          type: "error",
+          icon: XCircle,
+          message: "Failed to analyze document",
+          detail: error.message,
+          severity: "high",
+        },
+      ])
+    } finally {
+      setIsScanning(false)
+      setScanComplete(true)
+    }
+  }
+
+  // Export scan results as JSON
+  const handleExportResults = () => {
+    const dataStr = JSON.stringify(scanResults, null, 2)
+    const blob = new Blob([dataStr], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "scan-results.json"
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -250,11 +350,18 @@ export default function FraudDetectionPage() {
                       {isScanning ? "Scanning..." : "Start Fraud Scan"}
                     </Button>
                     <div className="space-y-2">
-                      <Button variant="outline" className="w-full">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                      />
+                      <Button variant="outline" className="w-full" onClick={handleUploadClick}>
                         <FileText className="w-4 h-4 mr-2" />
                         Upload Document
                       </Button>
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" onClick={handleExportResults}>
                         <Download className="w-4 h-4 mr-2" />
                         Export Results
                       </Button>
@@ -274,32 +381,42 @@ export default function FraudDetectionPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {scanResults.map((result, index) => (
-                        <motion.div
-                          key={result.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className={`p-4 rounded-lg border ${getSeverityColor(result.severity)}`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <result.icon className={`w-6 h-6 ${getTypeColor(result.type)} flex-shrink-0 mt-0.5`} />
-                            <div className="flex-1">
-                              <h4 className={`font-medium ${getTypeColor(result.type)}`}>{result.message}</h4>
-                              {result.detail && <p className="text-sm text-gray-600 mt-1">{result.detail}</p>}
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {result.severity.toUpperCase()} PRIORITY
-                                </Badge>
-                                <Button variant="ghost" size="sm">
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  Details
-                                </Button>
+                      {isScanning && scanResults.length === 0 ? (
+                        <div className="text-center p-8">
+                          <p>Analyzing document, please wait...</p>
+                        </div>
+                      ) : scanResults.length === 0 && scanComplete ? (
+                        <div className="text-center p-8">
+                          <p>No issues found, or the analysis returned no results.</p>
+                        </div>
+                      ) : (
+                        scanResults.map((result, index) => (
+                          <motion.div
+                            key={result.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className={`p-4 rounded-lg border ${getSeverityColor(result.severity)}`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <result.icon className={`w-6 h-6 ${getTypeColor(result.type)} flex-shrink-0 mt-0.5`} />
+                              <div className="flex-1">
+                                <h4 className={`font-medium ${getTypeColor(result.type)}`}>{result.message}</h4>
+                                {result.detail && <p className="text-sm text-gray-600 mt-1">{result.detail}</p>}
+                                <div className="flex items-center justify-between mt-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {result.severity.toUpperCase()} PRIORITY
+                                  </Badge>
+                                  <Button variant="ghost" size="sm">
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    Details
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      ))}
+                          </motion.div>
+                        ))
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>

@@ -19,7 +19,7 @@ interface Message {
   error?: boolean
 }
 
-const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook-test/c86c73ac-1f3a-4b4b-84a9-ecf98c789132"
+const WEBHOOK_URL = "https://guptag.app.n8n.cloud/webhook/c86c73ac-1f3a-4b4b-84a9-ecf98c789132"
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
@@ -161,135 +161,135 @@ export function ChatWidget() {
   }, [isOpen])
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {/* Chat Widget */}
+    <>
+      {/* Chat Widget (fixed above the button) */}
       {isOpen && (
-        <Card className="w-80 h-96 shadow-2xl border-2">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/assets/TenuntTrust (1).png" alt="TenantTrust" />
-                  <AvatarFallback>TT</AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-sm">TenantTrust Support</CardTitle>
-                  <Badge variant="secondary" className="text-xs">
-                    {isLoading ? "Connecting..." : "Online"}
-                  </Badge>
+        <div className="fixed bottom-24 right-4 z-50">
+          <Card className="w-80 h-96 shadow-2xl border-2">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/assets/TenuntTrust (1).png" alt="TenantTrust" />
+                    <AvatarFallback>TT</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-sm">TenantTrust Support</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {isLoading ? "Connecting..." : "Online"}
+                    </Badge>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-0 flex flex-col h-full">
-            <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
-              <div className="space-y-4 pb-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-2",
-                      message.sender === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {message.sender === "bot" && (
+            </CardHeader>
+            
+            <CardContent className="p-0 flex flex-col h-full pb-6">
+              <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+                <div className="space-y-4 pb-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "flex gap-2",
+                        message.sender === "user" ? "justify-end" : "justify-start"
+                      )}
+                    >
+                      {message.sender === "bot" && (
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src="/assets/TenuntTrust (1).png" alt="Bot" />
+                          <AvatarFallback>
+                            {message.error ? (
+                              <AlertCircle className="h-3 w-3 text-destructive" />
+                            ) : (
+                              <Bot className="h-3 w-3" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                          message.sender === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : message.error
+                            ? "bg-destructive/10 text-destructive border border-destructive/20"
+                            : "bg-muted"
+                        )}
+                      >
+                        {message.sender === 'bot' ? <SimpleMarkdown text={message.text} /> : message.text}
+                      </div>
+                      {message.sender === "user" && (
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback>
+                            <User className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  ))}
+                  {isTyping && (
+                    <div className="flex gap-2 justify-start">
                       <Avatar className="h-6 w-6">
                         <AvatarImage src="/assets/TenuntTrust (1).png" alt="Bot" />
                         <AvatarFallback>
-                          {message.error ? (
-                            <AlertCircle className="h-3 w-3 text-destructive" />
-                          ) : (
-                            <Bot className="h-3 w-3" />
-                          )}
+                          <Bot className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                        message.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : message.error
-                          ? "bg-destructive/10 text-destructive border border-destructive/20"
-                          : "bg-muted"
-                      )}
-                    >
-                      {message.sender === 'bot' ? <SimpleMarkdown text={message.text} /> : message.text}
-                    </div>
-                    {message.sender === "user" && (
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>
-                          <User className="h-3 w-3" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex gap-2 justify-start">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src="/assets/TenuntTrust (1).png" alt="Bot" />
-                      <AvatarFallback>
-                        <Bot className="h-3 w-3" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-muted rounded-lg px-3 py-2 text-sm">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                      <div className="bg-muted rounded-lg px-3 py-2 text-sm">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </ScrollArea>
+              
+              <div className="p-4 border-t">
+                <div className="flex gap-2">
+                  <Input
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={isLoading ? "Please wait..." : "Type your message..."}
+                    className="flex-1"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    size="sm"
+                    disabled={!inputValue.trim() || isLoading}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </ScrollArea>
-            
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={isLoading ? "Please wait..." : "Type your message..."}
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  size="sm"
-                  disabled={!inputValue.trim() || isLoading}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Chat Toggle Button */}
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        size="lg"
-        className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-      >
-        {isOpen ? (
-          <X className="h-6 w-6" />
-        ) : (
+      {/* Chat Toggle Button (always fixed at bottom right) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button
+          onClick={() => setIsOpen(!isOpen)}
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+        >
           <MessageCircle className="h-6 w-6" />
-        )}
-      </Button>
-    </div>
+        </Button>
+      </div>
+    </>
   )
 } 

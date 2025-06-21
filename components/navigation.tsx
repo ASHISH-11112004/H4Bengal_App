@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -94,7 +95,10 @@ export function Navigation() {
                     className="justify-start h-12"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Link href={item.href} className="flex items-center space-x-3">
+                    <Link
+                      href={item.href}
+                      className="flex items-center space-x-3"
+                    >
                       <item.icon className="h-5 w-5" />
                       <span>{item.name}</span>
                     </Link>
@@ -112,5 +116,5 @@ export function Navigation() {
         </div>
       </div>
     </header>
-  )
+  );
 }

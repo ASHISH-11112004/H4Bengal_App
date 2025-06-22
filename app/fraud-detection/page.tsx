@@ -3,6 +3,14 @@
 import { useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -172,6 +180,8 @@ export default function FraudDetectionPage() {
     riskScore: "Medium",
     overallScore: 85,
   })
+
+  const [isRecommendationsOpen, setIsRecommendationsOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -358,6 +368,62 @@ export default function FraudDetectionPage() {
     a.download = "scan-results.json"
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleGenerateReport = () => {
+    let reportContent = `
+AI Fraud Detection Report
+=========================
+
+Date: ${new Date().toLocaleString()}
+
+AI Analysis Metrics:
+--------------------
+- Clause Coverage: ${aiAnalysis.clauseCoverage}%
+- Legal Compliance: ${aiAnalysis.legalCompliance}%
+- Risk Score: ${aiAnalysis.riskScore}
+- Overall Security Score: ${aiAnalysis.overallScore}/100
+
+Scan Results:
+-------------
+`
+    scanResults.forEach((result) => {
+      reportContent += `
+- [${result.severity.toUpperCase()}] ${result.message}
+  - Detail: ${result.detail}
+`
+    })
+
+    const blob = new Blob([reportContent.trim()], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "fraud-detection-report.txt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportAnalysisData = () => {
+    const dataToExport = {
+      aiAnalysis,
+      scanResults,
+    }
+    const dataStr = JSON.stringify(dataToExport, null, 2)
+    const blob = new Blob([dataStr], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "analysis-data.json"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleScheduleScans = () => {
+    alert("Feature coming soon: Automated recurring scans for your documents.")
   }
 
   return (
@@ -575,19 +641,19 @@ export default function FraudDetectionPage() {
                     <CardTitle>Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button className="w-full justify-start">
+                    <Button className="w-full justify-start" onClick={handleGenerateReport}>
                       <FileText className="w-4 h-4 mr-2" />
                       Generate Detailed Report
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" className="w-full justify-start" onClick={handleExportAnalysisData}>
                       <Download className="w-4 h-4 mr-2" />
                       Export Analysis Data
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" className="w-full justify-start" onClick={handleScheduleScans}>
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Schedule Regular Scans
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" className="w-full justify-start" onClick={() => setIsRecommendationsOpen(true)}>
                       <Info className="w-4 h-4 mr-2" />
                       View Recommendations
                     </Button>
@@ -642,6 +708,39 @@ export default function FraudDetectionPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Recommendations Modal */}
+      <Dialog open={isRecommendationsOpen} onOpenChange={setIsRecommendationsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Actionable Recommendations</DialogTitle>
+            <DialogDescription>
+              Based on the scan, here are the recommended actions to improve your document's security.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto p-1 space-y-4">
+            {scanResults
+              .filter((r) => r.severity === "high" || r.severity === "medium")
+              .map((rec) => (
+                <div key={`rec-${rec.id}`} className={`p-4 rounded-lg border ${getSeverityColor(rec.severity)}`}>
+                  <div className="flex items-start space-x-3">
+                    <rec.icon className={`w-6 h-6 ${getTypeColor(rec.type)} flex-shrink-0 mt-0.5`} />
+                    <div className="flex-1">
+                      <h4 className={`font-medium ${getTypeColor(rec.type)}`}>{rec.message}</h4>
+                      {rec.detail && <p className="text-sm text-gray-600 mt-1">{rec.detail}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            {scanResults.filter((r) => r.severity === "high" || r.severity === "medium").length === 0 && (
+              <p className="text-center text-gray-500 py-4">No high or medium priority recommendations found.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsRecommendationsOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

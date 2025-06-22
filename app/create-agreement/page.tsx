@@ -5,7 +5,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import jsPDF from "jspdf"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -114,19 +113,43 @@ export default function CreateAgreementPage() {
     alert("Draft saved successfully!")
   }
 
-  const handleDownloadPdf = () => {
-    const doc = new jsPDF()
-    doc.text("Rental Agreement", 20, 10)
-    doc.text(`Landlord: ${formData.landlordName}`, 20, 20)
-    doc.text(`Tenant: ${formData.tenantName}`, 20, 30)
-    doc.text(`Property: ${formData.propertyAddress}`, 20, 40)
-    doc.text(`Rent: $${formData.rent}/month`, 20, 50)
-    doc.text(`Deposit: $${formData.deposit}`, 20, 60)
-    doc.text(`Start Date: ${formData.startDate}`, 20, 70)
-    doc.text(`Duration: ${formData.duration} months`, 20, 80)
-    doc.text("Additional Terms:", 20, 90)
-    doc.text(formData.additionalTerms, 20, 100, { maxWidth: 170 })
-    doc.save("rental-agreement.pdf")
+  const handleDownloadTxt = () => {
+    const content = `
+Rental Agreement
+================
+
+### Parties
+- Landlord: ${formData.landlordName} (${formData.landlordEmail}, ${formData.landlordPhone})
+- Tenant: ${formData.tenantName} (${formData.tenantEmail}, ${formData.tenantPhone})
+
+### Property
+- Address: ${formData.propertyAddress}
+- Type: ${formData.propertyType}
+
+### Financial Terms
+- Monthly Rent: $${formData.rent}
+- Security Deposit: $${formData.deposit}
+- Lease Duration: ${formData.duration} months
+- Lease Start Date: ${formData.startDate}
+
+### Policies & Terms
+- Utilities Included: ${formData.utilities.join(", ") || "None specified"}
+- Pet Policy: ${formData.petPolicy}
+- Smoking Policy: ${formData.smokingPolicy}
+
+### Additional Terms
+${formData.additionalTerms || "No additional terms specified."}
+`
+
+    const blob = new Blob([content.trim()], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "rental-agreement.txt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handleRunFraudCheck = () => {
@@ -560,9 +583,9 @@ export default function CreateAgreementPage() {
                     <Eye className="w-4 h-4 mr-2" />
                     Preview Document
                   </Button>
-                  <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadPdf}>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTxt}>
                     <Download className="w-4 h-4 mr-2" />
-                    Download PDF
+                    Download Text File
                   </Button>
                   <Button variant="outline" className="w-full sm:w-auto" onClick={handleRunFraudCheck}>
                     <Shield className="w-4 h-4 mr-2" />

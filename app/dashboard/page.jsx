@@ -54,6 +54,12 @@ export default function DashboardPage() {
   ])
 
   useEffect(() => {
+    // Check for saved draft
+    const savedDraft = localStorage.getItem("dashboardAgreementDraft")
+    if (savedDraft) {
+      setFormData(JSON.parse(savedDraft))
+    }
+
     // Check authentication status
     const checkAuth = () => {
       const authStatus = localStorage.getItem("civic_authenticated")
@@ -75,10 +81,74 @@ export default function DashboardPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleSaveDraft = () => {
+    localStorage.setItem("dashboardAgreementDraft", JSON.stringify(formData))
+    alert("Draft saved successfully!")
+  }
+
+  const handleDownloadTxtFromPreview = () => {
+    const content = `
+Rental Agreement Summary
+========================
+Landlord: ${formData.landlordName || "Not specified"}
+Tenant: ${formData.tenantName || "Not specified"}
+Monthly Rent: $${formData.rent || "0"}
+Security Deposit: $${formData.deposit || "0"}
+Duration: ${formData.duration} months
+Property: ${formData.address || "Not specified"}
+`
+    const blob = new Blob([content.trim()], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "agreement-summary.txt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log("Form submitted:", formData)
-    // Handle form submission logic here
+
+    const content = `
+Rental Agreement
+================
+
+### Parties
+- Landlord: ${formData.landlordName}
+- Tenant: ${formData.tenantName}
+
+### Property
+- Address: ${formData.address}
+
+### Financial Terms
+- Monthly Rent: $${formData.rent}
+- Security Deposit: $${formData.deposit}
+- Lease Duration: ${formData.duration} months
+`
+
+    const blob = new Blob([content.trim()], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "rental-agreement.txt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    // Clear form and draft after submission
+    setFormData({
+      landlordName: "",
+      tenantName: "",
+      rent: "",
+      deposit: "",
+      address: "",
+      duration: "12",
+    })
+    localStorage.removeItem("dashboardAgreementDraft")
   }
 
   const getStatusColor = (status) => {
@@ -370,7 +440,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <Button type="button" variant="outline" className="flex-1">
+                      <Button type="button" variant="outline" className="flex-1" onClick={handleSaveDraft}>
                         Save as Draft
                       </Button>
                       <Button type="submit" className="flex-1">
@@ -422,9 +492,9 @@ export default function DashboardPage() {
                       <Eye className="w-4 h-4 mr-2" />
                       Preview Full Document
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={handleDownloadTxtFromPreview}>
                       <Download className="w-4 h-4 mr-2" />
-                      Download PDF
+                      Download Text File
                     </Button>
                   </div>
                 </CardContent>
